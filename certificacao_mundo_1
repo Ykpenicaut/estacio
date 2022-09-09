@@ -1,0 +1,543 @@
+from tkinter import *
+from tkinter import ttk
+import sqlite3
+
+#import reportlab.pdfgen
+#from reportlab.pdfgen import canvas
+#from reportlab.lib.pagesizes import A4
+#from reportlab.pdfbase import pdfmetrics
+#from reportlab.platypus import SimpleDocTemplate, Image
+
+import webbrowser
+
+janela = Tk()
+
+class Relatorio_fun():
+    def print_fun(self):
+        webbrowser.open("func.pdf")
+
+    def gerar_rel(self):
+        self.func = canvas.Canvas("func.pdf")
+
+        self.idREL = self.id_entry.get()
+        self.cpfREL = self.cpf_entry.get()
+        self.nomeREL = self.nome_entry.get()
+        self.telefoneREL = self.telefone_entry.get()
+        self.radioREL = self.radio_entry.get()
+        self.turnoREL = self.turno_entry.get()
+        self.equipeREL = self.equipe_entry.get()
+
+        self.func.setFont("Helvetica-Bold", 24)
+        self.func.drawString(200, 790, 'Ficha funcionário')
+
+        self.func.showPage()
+        self.func.save()
+        self.print_fun()
+
+class Funcs():
+    def fecha(self):
+        janela.destroy()
+
+    def limpar_func(self):
+        self.id_entry.delete(0, END)
+        self.cpf_entry.delete(0, END)
+        self.nome_entry.delete(0, END)
+        self.telefone_entry.delete(0, END)
+        self.radio_entry.delete(0, END)
+        self.turno_entry.delete(0, END)
+        self.equipe_entry.delete(0, END)
+
+    def conecta_bd_func(self):
+        self.conn = sqlite3.connect('func.bd')
+        self.cursor = self.conn.cursor();
+        print('Conectando ao banco de dados.')
+
+    def desconecta_bd_func(self):
+        self.conn.close();
+        print('Desconectando ao banco de dados.')
+
+    def montaTabela_func(self):
+        self.conecta_bd_func()
+        # Criação da tabela
+        self.cursor.execute("""
+                CREATE TABLE IF NOT EXISTS func (
+                    id INTEGER PRIMARY KEY,
+                    cpf INTEGER(15) NOT NULL,
+                    nome CHAR(40) NOT NULL,
+                    telefone INTEGER(13) NOT NULL,
+                    radio INTEGER(8),
+                    turno CHAR(8) NOT NULL,
+                    equipe CHAR(30) NOT NULL
+                );
+            """)
+        self.conn.commit();
+        print('Banco de dados criado.')
+        self.desconecta_bd_func()
+
+    def variaveis_func(self):
+        self.id_func = self.id_entry.get()
+        self.cpf_func = self.cpf_entry.get()
+        self.nome_func = self.nome_entry.get()
+        self.telefone_func = self.telefone_entry.get()
+        self.radio_func = self.radio_entry.get()
+        self.turno_func = self.turno_entry.get()
+        self.equipe_func = self.equipe_entry.get()
+
+    def cad_func(self):
+        self.variaveis_func()
+        self.conecta_bd_func()
+        self.cursor.execute(""" INSERT INTO func ( cpf, nome, telefone, radio, turno, equipe)
+            VALUES (?, ?, ?, ?, ?, ?)""", (self.cpf_func, self.nome_func, self.telefone_func, self.radio_func, self.turno_func, self.equipe_func))
+        self.conn.commit()
+        self.desconecta_bd_func()
+        self.select_lista_func()
+        self.limpar_func()
+
+    def select_lista_func(self):
+        self.tabela_cp.delete(*self.tabela_cp.get_children())
+        self.conecta_bd_func()
+        lista = self.cursor.execute("""
+            SELECT id, cpf, nome, telefone, radio, turno, equipe FROM func
+            ORDER BY id ASC; """)
+        for i in lista:
+            self.tabela_cp.insert('', END, values=i)
+        self.desconecta_bd_func()
+
+    def OnDoubleClick_func(self, event):
+        self.limpar_func()
+        self.tabela_cp.selection()
+        for n in self.tabela_cp.selection():
+            col1, col2, col3, col4, col5, col6, col7 = self.tabela_cp.item(n, 'values')
+            self.id_entry.insert(END, col1)
+            self.cpf_entry.insert(END, col2)
+            self.nome_entry.insert(END, col3)
+            self.telefone_entry.insert(END, col4)
+            self.radio_entry.insert(END, col5)
+            self.turno_entry.insert(END, col6)
+            self.equipe_entry.insert(END, col7)
+
+    #DELETAR OK
+    def deleta_func(self):
+        self.variaveis()
+        self.conecta_bd()
+        self.cursor.execute("""DELETE FROM func WHERE id = ?""", [self.id])
+        self.conn.commit()
+        self.desconecta_bd()
+        self.limpar()
+        self.select_lista()
+
+    #EDITAR OK
+    def edita_func(self):
+        self.variaveis()
+        self.conecta_bd()
+        self.cursor.execute(""" UPDATE func SET cpf = ?, nome = ?, telefone = ?, radio = ?, turno = ?, equipe = ?
+            WHERE id = ? """, (self.cpf, self.nome, self.telefone, self.radio, self.turno, self.equipe, self.id))
+        self.conn.commit()
+        self.desconecta_bd()
+        self.select_lista()
+        self.limpar()
+
+    #BUSCA OK
+    def busca(self):
+        self.conecta_bd()
+        self.tabela_cp.delete(*self.tabela_cp.get_children())
+        self.nome_entry.insert(END, '%')
+        nome = self.nome_entry.get()
+        self.cursor.execute( """ SELECT id, cpf, nome, telefone, radio, turno, equipe FROM func WHERE nome LIKE '%s' ORDER BY nome ASC""" % nome)
+        busca_func = self.cursor.fetchall()
+        for i in busca_func:
+            self.tabela_cp.insert("", END, values=i)
+        self.limpar()
+        self.desconecta_bd()
+
+class Ferramentas():
+
+    def fechar_fer(self):
+        janela.destroy()
+
+    def limpar_fer(self):
+        self.cod_entry.delete(0, END)
+        self.descricao_entry.delete(0, END)
+        self.fabricante_entry.delete(0, END)
+        self.voltagem_entry.delete(0, END)
+        self.serialNum_entry.delete(0, END)
+        self.tamanho_entry.delete(0, END)
+        self.unidMedida_entry.delete(0, END)
+
+    def conecta_bd_fer(self):
+        self.connfer = sqlite3.connect('ferr.bd')
+        self.cursorfer = self.connfer.cursor();
+        print('Conectando ao banco de dados.')
+
+    def desconecta_bd_fer(self):
+        self.connfer.close();
+        print('Desconectando ao banco de dados.')
+
+    def montaTabela_fer(self):
+        self.conecta_bd_fer()
+        # Criação da tabela
+        self.cursorfer.execute("""
+                CREATE TABLE IF NOT EXISTS ferr (
+                    cod INTEGER PRIMARY KEY,
+                    descricao INTEGER(15) NOT NULL,
+                    fabricante CHAR(40) NOT NULL,
+                    voltagem INTEGER(13) NOT NULL,
+                    serialNum INTEGER(8),
+                    tamanho CHAR(8) NOT NULL,
+                    unidMedida CHAR(30) NOT NULL
+                );
+            """)
+        self.connfer.commit();
+        print('Banco de dados criado.')
+        self.desconecta_bd_fer()
+
+    def variaveis_fer(self):
+        self.cod = self.cod_entry.get()
+        self.desc = self.descricao_entry.get()
+        self.fabr = self.fabricante_entry.get()
+        self.volt = self.voltagem_entry.get()
+        self.sn = self.serialNum_entry.get()
+        self.tam = self.tamanho_entry.get()
+        self.um = self.unidMedida_entry.get()
+
+    def cad_fer(self):
+        self.variaveis_fer()
+        self.conecta_bd_fer()
+        self.cursorfer.execute(""" INSERT INTO ferr (cod, descricao, fabricante, voltagem, serialNum, tamanho, unidMedida)
+            VALUES (?, ?, ?, ?, ?, ?, ?)""", (self.cod, self.desc, self.fabr, self.volt, self.sn, self.tam, self.um))
+        self.connfer.commit()
+        self.desconecta_bd_fer()
+        self.select_lista_fer()
+        self.limpar_fer()
+
+    def select_lista_fer(self):
+        self.tabela_cf.delete(*self.tabela_cf.get_children())
+        self.conecta_bd_fer()
+        lista_fer = self.cursorfer.execute("""SELECT cod, descricao, fabricante, voltagem, serialNum, tamanho, unidMedida FROM ferr
+            ORDER BY cod ASC; """)
+        for i in lista_fer:
+            self.tabela_cf.insert('', END, values=i)
+        self.desconecta_bd_fer()
+
+    def OnDoubleClick_fer(self, event):
+        self.limpar_fer()
+        self.tabela_cf.selection()
+        for n in self.tabela_cf.selection():
+            col1, col2, col3, col4, col5, col6, col7 = self.tabela_cf.item(n, 'values')
+            self.cod_entry.insert(END, col1)
+            self.descricao_entry.insert(END, col2)
+            self.fabricante_entry.insert(END, col3)
+            self.voltagem_entry.insert(END, col4)
+            self.serialNum_entry.insert(END, col5)
+            self.tamanmho_entry.insert(END, col6)
+            self.unidMedida_entry.insert(END, col7)
+
+    #DELETAR OK
+    def deleta_fer(self):
+        self.variaveis_fer()
+        self.conecta_bd_fer()
+        self.cursorfer.execute("""DELETE FROM ferr WHERE idFer = ?""", [self.cod])
+        self.connfer.commit()
+        self.desconecta_bd_fer()
+        self.limpar_fer()
+        self.select_lista_fer()
+
+    #EDITAR OK
+    def edita_fer(self):
+        self.variaveis_fer()
+        self.conecta_bd_fer()
+        self.cursorfer.execute(""" UPDATE ferr SET descricao = ?, fabricante = ?, voltagem = ?, serialNum = ?, tamanho = ?, unidMedida = ?
+            WHERE idFer = ? """, (self.desc, self.fabr, self.volt, self.sn, self.tam, self.um, self.cod))
+        self.connfer.commit()
+        self.desconecta_bd_fer()
+        self.select_lista_fer()
+        self.limpar_fer()
+
+    #BUSCA OK
+    def busca_fer(self):
+        self.conecta_bd_fer()
+        self.tabela_cf.delete(*self.tabela_cf.get_children())
+        self.fabricante_entry.insert(END, '%')
+        fabricante = self.fabricante_entry.get()
+        self.cursorfer.execute( """ SELECT descricao, fabricante, voltagem, serialNum, tamanho, unidMedida FROM ferr WHERE descricao LIKE '%s' ORDER BY cod ASC""" % descricao)
+        busca_func = self.cursorfer.fetchall()
+        for i in busca_func:
+            self.tabela_cf.insert("", END, values=i)
+        self.limpar_fer()
+        self.desconecta_bd_fer()
+
+class Programa(Funcs, Ferramentas, Relatorio_fun):
+
+    def __init__(self):
+
+        self.janela = janela
+        self.tela()
+        self.frames_prog()
+        self.Abas()
+        self.widgets_frame_1()
+        self.frame_2_cp()
+        self.frame_2_cf()
+        self.cadastro_func()
+        self.cadastro_fer()
+        self.montaTabela_func()
+        self.montaTabela_fer()
+        self.select_lista_func()
+        #self.select_lista_fer()
+        self.Menus()
+
+        janela.mainloop()
+
+    def tela(self):
+        self.janela.title('Cadastro de Funcionários')
+        self.janela.configure(background='gray')
+        self.janela.geometry('700x600')
+        self.janela.resizable(True, True)
+        self.janela.wm_maxsize(width=900, height=700)
+        self.janela.wm_minsize(width=700, height=500)
+
+    def frames_prog(self):
+        self.frame1 = Frame(self.janela, bd=3, bg='white', highlightthickness=3, highlightcolor='black')
+        self.frame1.place(relx=0.02, rely=0.02, relwidth=0.96, relheigh=0.10)
+        self.frame2 = Frame(self.janela, bd=3, bg='white', highlightthickness=3, highlightcolor='black')
+        self.frame2.place(relx=0.02, rely=0.13, relwidth=0.96, relheigh=0.35)
+        self.frame3 = Frame(self.janela, bd=3, bg='white', highlightthickness=3, highlightcolor='black')
+        self.frame3.place(relx=0.02, rely=0.49, relwidth=0.96, relheigh=0.49)
+
+    def Abas(self):
+        # abas
+        self.abas_cad = ttk.Notebook(self.frame2)
+        self.abas_tab = ttk.Notebook(self.frame3)
+        self.aba01 = Frame(self.abas_cad)
+        self.aba02 = Frame(self.abas_cad)
+        self.aba03 = Frame(self.abas_tab)
+        self.aba04 = Frame(self.abas_tab)
+
+        self.aba01.configure(background="blue")
+        self.aba02.configure(background="lightblue")
+        self.aba03.configure(background="blue")
+        self.aba04.configure(background="lightblue")
+
+
+        self.abas_cad.add(self.aba01, text='CADASTRO PESSOAL')
+        self.abas_cad.add(self.aba02, text='CADASTRO DE FERRAMENTA')
+        self.abas_tab.add(self.aba03, text='Tabela PESSOAL')
+        self.abas_tab.add(self.aba04, text='tabela DE FERRAMENTA')
+
+        self.abas_cad.place(relx=0, rely=0, relwidth=0.98, relheight=0.98)
+        self.abas_tab.place(relx=0, rely=0, relwidth=0.98, relheight=0.98)
+
+    def widgets_frame_1(self):
+        # botão para cadastro de pessoas
+        #        self.bt_cad_pes = Button(self.frame1, text='Cadastro Pessoal')
+        #self.bt_cad_pes.place(relx=0.02, rely=0.15, relwidth=0.20, relheigh=0.70)
+        # botão para cadastro de ferramentas
+        # self.bt_cad_fer = Button(self.frame1, text='Cadastro ferramentas')
+        #self.bt_cad_fer.place(relx=0.24, rely=0.15, relwidth=0.20, relheigh=0.70)
+        # botão para cadastro de busca
+        #self.bt_busca = Button(self.frame1, text='Busca', command=self.busca)
+        #self.bt_busca.place(relx=0.46, rely=0.15, relwidth=0.20, relheigh=0.70)
+        # botão para cadastro de reserva
+        #self.bt_reserva = Button(self.frame1, text='Reserva de Ferramentas')
+        #self.bt_reserva.place(relx=0.68, rely=0.15, relwidth=0.20, relheigh=0.70)
+
+
+        # botão para limpar cadastro de pessoas
+        self.bt_clear = Button(self.aba01, text='LIMPAR', command=self.limpar_func)
+        self.bt_clear.place(relx=0.735, rely=0.9, relwidth=0.1, relheigh=0.1)
+        # botão para cadastro
+        self.bt_CAD = Button(self.aba01, text='CADASTRAR', command=self.cad_func)
+        self.bt_CAD.place(relx=0.84, rely=0.9, relwidth=0.15, relheigh=0.1)
+
+        # botão para editar
+        self.bt_edit = Button(self.aba01, text='Editar', command=self.edita_func)
+        self.bt_edit.place(relx=0.735, rely=0.7, relwidth=0.1, relheigh=0.1)
+        # botão para deletar
+        self.bt_del = Button(self.aba01, text='apagar', command=self.deleta_func)
+        self.bt_del.place(relx=0.84, rely=0.7, relwidth=0.15, relheigh=0.1)
+
+        # botão para limpar cadastro de ferr
+        self.bt_clear = Button(self.aba02, text='LIMPAR', command=self.limpar_fer)
+        self.bt_clear.place(relx=0.735, rely=0.9, relwidth=0.1, relheigh=0.1)
+        # botão para fer
+        self.bt_CAD = Button(self.aba02, text='CADASTRAR', command=self.cad_fer)
+        self.bt_CAD.place(relx=0.84, rely=0.9, relwidth=0.15, relheigh=0.1)
+
+        # botão para editar fer
+        self.bt_edit = Button(self.aba02, text='Editar', command=self.edita_fer)
+        self.bt_edit.place(relx=0.735, rely=0.7, relwidth=0.1, relheigh=0.1)
+        # botão para deletar fer
+        self.bt_del = Button(self.aba02, text='apagar', command=self.deleta_fer)
+        self.bt_del.place(relx=0.84, rely=0.7, relwidth=0.15, relheigh=0.1)
+
+    def frame_2_cp(self):
+
+        # criação do campo ID
+        self.lb_ID = Label(self.aba01, text='ID: ')
+        self.lb_ID.place(relx=0.01, rely=0.25)
+
+        self.id_entry = Entry(self.aba01)
+        self.id_entry.place(relx=0.05, rely=0.25, relwidth=0.06)
+
+        # criação do campo cpf
+        self.lb_CPF = Label(self.aba01, text='CPF: ')
+        self.lb_CPF.place(relx=0.13, rely=0.25, )
+
+        self.cpf_entry = Entry(self.aba01)
+        self.cpf_entry.place(relx=0.18, rely=0.25, relwidth=0.13)
+
+        # criação do campo NOME
+        self.lb_NOME = Label(self.aba01, text='NOME: ')
+        self.lb_NOME.place(relx=0.31, rely=0.25, )
+
+        self.nome_entry = Entry(self.aba01)
+        self.nome_entry.place(relx=0.38, rely=0.25, relwidth=0.61)
+
+        # criação do campo TELEFONE CELULAR
+        self.lb_FONE = Label(self.aba01, text='TELEFONE: ')
+        self.lb_FONE.place(relx=0.01, rely=0.45, )
+
+        self.telefone_entry = Entry(self.aba01)
+        self.telefone_entry.place(relx=0.11, rely=0.45, relwidth=0.14)
+
+        # criação do campo RADIO
+        self.lb_RADIO = Label(self.aba01, text='RADIO: ')
+        self.lb_RADIO.place(relx=0.255, rely=0.45, )
+
+        self.radio_entry = Entry(self.aba01)
+        self.radio_entry.place(relx=0.32, rely=0.45, relwidth=0.14)
+
+        # criação do campo TURNO
+        self.lb_TURNO = Label(self.aba01, text='TURNO: ')
+        self.lb_TURNO.place(relx=0.47, rely=0.45, )
+
+        self.turno_entry = Entry(self.aba01)
+        self.turno_entry.place(relx=0.55, rely=0.45, relwidth=0.14)
+
+        # criação do campo NOME EQUIPE
+        self.lb_EQUIPE = Label(self.aba01, text='EQUIPE: ')
+        self.lb_EQUIPE.place(relx=0.01, rely=0.65, )
+
+        self.equipe_entry = Entry(self.aba01)
+        self.equipe_entry.place(relx=0.09, rely=0.65, relwidth=0.59)
+
+    def frame_2_cf(self):
+
+        # criação do campo ID
+        self.lb_ID = Label(self.aba02, text='ID: ')
+        self.lb_ID.place(relx=0.01, rely=0.25)
+
+        self.id_entry = Entry(self.aba02)
+        self.id_entry.place(relx=0.05, rely=0.25, relwidth=0.06)
+
+        # criação do campo cpf
+        self.lb_CPF = Label(self.aba02, text='CPF: ')
+        self.lb_CPF.place(relx=0.13, rely=0.25, )
+
+        self.cpf_entry = Entry(self.aba02)
+        self.cpf_entry.place(relx=0.18, rely=0.25, relwidth=0.13)
+
+        # criação do campo NOME
+        self.lb_NOME = Label(self.aba02, text='NOME: ')
+        self.lb_NOME.place(relx=0.31, rely=0.25, )
+
+        self.nome_entry = Entry(self.aba02)
+        self.nome_entry.place(relx=0.38, rely=0.25, relwidth=0.61)
+
+        # criação do campo TELEFONE CELULAR
+        self.lb_FONE = Label(self.aba02, text='TELEFONE: ')
+        self.lb_FONE.place(relx=0.01, rely=0.45, )
+
+        self.telefone_entry = Entry(self.aba02)
+        self.telefone_entry.place(relx=0.11, rely=0.45, relwidth=0.14)
+
+        # criação do campo RADIO
+        self.lb_RADIO = Label(self.aba02, text='RADIO: ')
+        self.lb_RADIO.place(relx=0.255, rely=0.45, )
+
+        self.radio_entry = Entry(self.aba02)
+        self.radio_entry.place(relx=0.32, rely=0.45, relwidth=0.14)
+
+        # criação do campo TURNO
+        self.lb_TURNO = Label(self.aba02, text='TURNO: ')
+        self.lb_TURNO.place(relx=0.47, rely=0.45, )
+
+        self.turno_entry = Entry(self.aba02)
+        self.turno_entry.place(relx=0.55, rely=0.45, relwidth=0.14)
+
+        # criação do campo NOME EQUIPE
+        self.lb_EQUIPE = Label(self.aba02, text='EQUIPE: ')
+        self.lb_EQUIPE.place(relx=0.01, rely=0.65, )
+
+        self.equipe_entry = Entry(self.aba02)
+        self.equipe_entry.place(relx=0.09, rely=0.65, relwidth=0.59)
+
+    def cadastro_func(self):
+        self.tabela_cp = ttk.Treeview(self.aba03, height=3,
+                                      column=('col01', 'col02', 'col03', 'col04', 'col05', 'col06', 'col07'))
+        self.tabela_cp.heading('#0', text='')
+        self.tabela_cp.heading('#1', text='ID')
+        self.tabela_cp.heading('#2', text='CPF')
+        self.tabela_cp.heading('#3', text='NOME')
+        self.tabela_cp.heading('#4', text='TELEFONE')
+        self.tabela_cp.heading('#5', text='RÁDIO')
+        self.tabela_cp.heading('#6', text='TURNO')
+        self.tabela_cp.heading('#7', text='EQUIPE')
+
+        self.tabela_cp.column('#0', width=1)
+        self.tabela_cp.column('#1', width=15)
+        self.tabela_cp.column('#2', width=40)
+        self.tabela_cp.column('#3', width=200)
+        self.tabela_cp.column('#4', width=40)
+        self.tabela_cp.column('#5', width=40)
+        self.tabela_cp.column('#6', width=20)
+        self.tabela_cp.column('#7', width=200)
+
+        self.tabela_cp.place(relx=0.01, rely=0.01, relwidth=0.96, relheight=0.98)
+        self.rolagem = Scrollbar(self.aba03, orient='vertical')
+        self.tabela_cp.configure(yscroll=self.rolagem.set)
+        self.rolagem.place(relx=0.97, rely=0.01, relwidth=0.02, relheight=0.98)
+        self.tabela_cp.bind('<Double-1>', self.OnDoubleClick_func)
+
+    def cadastro_fer(self):
+        self.tabela_cf = ttk.Treeview(self.aba04, height=3,
+                                      column=('col01', 'col02', 'col03', 'col04', 'col05', 'col06', 'col07'))
+        self.tabela_cf.heading('#0', text='')
+        self.tabela_cf.heading('#1', text='ID Fer')
+        self.tabela_cf.heading('#2', text='')
+        self.tabela_cf.heading('#3', text='NOME')
+        self.tabela_cf.heading('#4', text='TELEFONE')
+        self.tabela_cf.heading('#5', text='RÁDIO')
+        self.tabela_cf.heading('#6', text='TURNO')
+        self.tabela_cf.heading('#7', text='EQUIPE')
+
+        self.tabela_cf.column('#0', width=1)
+        self.tabela_cf.column('#1', width=15)
+        self.tabela_cf.column('#2', width=40)
+        self.tabela_cf.column('#3', width=200)
+        self.tabela_cf.column('#4', width=40)
+        self.tabela_cf.column('#5', width=40)
+        self.tabela_cf.column('#6', width=20)
+        self.tabela_cf.column('#7', width=200)
+
+        self.tabela_cf.place(relx=0.01, rely=0.01, relwidth=0.96, relheight=0.98)
+        self.rolagem = Scrollbar(self.aba04, orient='vertical')
+        self.tabela_cf.configure(yscroll=self.rolagem.set)
+        self.rolagem.place(relx=0.97, rely=0.01, relwidth=0.02, relheight=0.98)
+        self.tabela_cf.bind('<Double-1>', self.OnDoubleClick_fer)
+
+    def Menus(self):
+        menubar = Menu(self.janela)
+        self.janela.config(menu=menubar)
+        filemenu01 = Menu(menubar)
+        filemenu02 = Menu(menubar)
+
+        def Quit(): self.janela.destroy()
+
+        menubar.add_cascade(label="Início", menu= filemenu01)
+        menubar.add_cascade(label="Relatórios", menu= filemenu02)
+
+        filemenu01.add_command(label='sair', command=Quit)
+        filemenu02.add_command(label="Ficha Funcionário", command=self.gerar_rel)
+
+
+Programa()
